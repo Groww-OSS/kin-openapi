@@ -584,14 +584,25 @@ func ToV3SecurityRequirements(requirements openapi2.SecurityRequirements) openap
 	return result
 }
 
-func ToV3AdditionalProps(additionalProperties openapi3.AdditionalProperties) openapi3.AdditionalProperties {
-	if additionalProperties.Schema != nil {
-		additionalProperties.Schema.Ref = ToV3Ref(additionalProperties.Schema.Ref)
-		if additionalProperties.Schema.Value != nil {
-			additionalProperties.Schema.Value.AdditionalProperties = ToV3AdditionalProps(additionalProperties.Schema.Value.AdditionalProperties)
-		}
+func ToV3AdditionalProps(additionalProperties openapi2.AdditionalProperties) openapi3.AdditionalProperties {
+	if additionalProperties.Schema == nil {
+		return openapi3.AdditionalProperties{Has: additionalProperties.Has}
 	}
-	return additionalProperties
+	return openapi3.AdditionalProperties{
+		Has:    additionalProperties.Has,
+		Schema: ToV3SchemaRef(additionalProperties.Schema),
+	}
+}
+
+func FromV3AdditionalProps(additionalProperties openapi3.AdditionalProperties, components *openapi3.Components) openapi2.AdditionalProperties {
+	if additionalProperties.Schema == nil {
+		return openapi2.AdditionalProperties{Has: additionalProperties.Has}
+	}
+	v2SchemaRef, _ := FromV3SchemaRef(additionalProperties.Schema, components)
+	return openapi2.AdditionalProperties{
+		Has:    additionalProperties.Has,
+		Schema: v2SchemaRef,
+	}
 }
 
 func ToV3SecurityScheme(securityScheme *openapi2.SecurityScheme) (*openapi3.SecuritySchemeRef, error) {
@@ -909,7 +920,7 @@ func FromV3SchemaRef(schema *openapi3.SchemaRef, components *openapi3.Components
 		MaxProps:             schema.Value.MaxProps,
 		Properties:           make(openapi2.Schemas),
 		AllOf:                make(openapi2.SchemaRefs, len(schema.Value.AllOf)),
-		AdditionalProperties: schema.Value.AdditionalProperties,
+		AdditionalProperties: FromV3AdditionalProps(schema.Value.AdditionalProperties, components),
 	}
 
 	if v := schema.Value.Items; v != nil {
