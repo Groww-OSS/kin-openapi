@@ -513,11 +513,7 @@ func ToV3SchemaRef(schema *openapi2.SchemaRef) *openapi3.SchemaRef {
 		MaxProps:             schema.Value.MaxProps,
 		AllOf:                make(openapi3.SchemaRefs, len(schema.Value.AllOf)),
 		Properties:           make(openapi3.Schemas),
-		AdditionalProperties: schema.Value.AdditionalProperties,
-	}
-
-	if schema.Value.AdditionalProperties.Schema != nil {
-		v3Schema.AdditionalProperties.Schema.Ref = ToV3Ref(schema.Value.AdditionalProperties.Schema.Ref)
+		AdditionalProperties: ToV3AdditionalProps(schema.Value.AdditionalProperties),
 	}
 
 	if schema.Value.Discriminator != "" {
@@ -586,6 +582,16 @@ func ToV3SecurityRequirements(requirements openapi2.SecurityRequirements) openap
 		result[i] = item
 	}
 	return result
+}
+
+func ToV3AdditionalProps(additionalProperties openapi3.AdditionalProperties) openapi3.AdditionalProperties {
+	if additionalProperties.Schema != nil {
+		additionalProperties.Schema.Ref = ToV3Ref(additionalProperties.Schema.Ref)
+		if additionalProperties.Schema.Value != nil {
+			additionalProperties.Schema.Value.AdditionalProperties = ToV3AdditionalProps(additionalProperties.Schema.Value.AdditionalProperties)
+		}
+	}
+	return additionalProperties
 }
 
 func ToV3SecurityScheme(securityScheme *openapi2.SecurityScheme) (*openapi3.SecuritySchemeRef, error) {
